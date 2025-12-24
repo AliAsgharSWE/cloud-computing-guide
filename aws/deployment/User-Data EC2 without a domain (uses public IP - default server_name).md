@@ -22,8 +22,16 @@ apt-get install -y curl unzip software-properties-common ca-certificates
 # ---------------------------
 curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
 apt-get install -y nodejs
+
 echo "Node version: $(node -v)"
 echo "NPM version: $(npm -v)"
+
+# ---------------------------
+# NPM global config (BEST PRACTICE)
+# ---------------------------
+# Disable funding + audit noise (cleaner CI/CD logs, faster installs)
+npm config set fund false
+npm config set audit false
 
 # ---------------------------
 # Install PM2 globally

@@ -15,15 +15,25 @@ apt-get upgrade -y
 # ---------------------------
 # Install core utilities
 # ---------------------------
-apt-get install -y curl unzip software-properties-common ca-certificates gnupg lsb-release build-essential
+apt-get install -y curl unzip software-properties-common ca-certificates gnupg lsb-release build-essential npm
 
 # ---------------------------
-# Install Node.js LTS
+# Install Node.js LTS via NodeSource
 # ---------------------------
 curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
 apt-get install -y nodejs
+
 echo "Node version: $(node -v)"
 echo "NPM version: $(npm -v)"
+
+# ---------------------------
+# Install 'n' for Node version management
+# ---------------------------
+npm install -g n
+n lts
+hash -r
+
+echo "Node version after n: $(node -v)"
 
 # ---------------------------
 # Install PM2 globally
@@ -57,7 +67,7 @@ NGINX_CONF="/etc/nginx/sites-available/app-name"
 cat <<EOF > "$NGINX_CONF"
 server {
     listen 80;
-    server_name _;
+    server_name example.com www.example.com;
 
     root $MAINT_DIR;
     index index.html;
@@ -84,10 +94,10 @@ nginx -t
 systemctl reload nginx
 
 # ---------------------------
-# Optional: SSL placeholder
+# Optional SSL tooling (CI/CD friendly)
 # ---------------------------
 apt-get install -y certbot python3-certbot-nginx
-echo "SSL setup will be handled by Certbot or CI/CD workflow"
+echo "SSL will be handled by Certbot or CI/CD workflow"
 
 # ---------------------------
 # Ensure PM2 runs on boot
