@@ -57,13 +57,13 @@ NGINX_CONF="/etc/nginx/sites-available/app-name"
 cat <<EOF > "$NGINX_CONF"
 server {
     listen 80;
-    server_name yourdomain.com www.yourdomain.com;
+    server_name _;
 
     root $MAINT_DIR;
     index index.html;
 
     location / {
-        proxy_pass http://localhost:4300;  # PM2 app port
+        proxy_pass http://localhost:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
