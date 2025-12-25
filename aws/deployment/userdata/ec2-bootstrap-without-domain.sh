@@ -1,73 +1,78 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 LOG_FILE="/var/log/user-data.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-echo "Starting EC2 bootstrap at $(date)"
+echo "🚀 EC2 bootstrap started at $(date)"
 
 # ---------------------------
-# System update
+# Base system updates & core packages
 # ---------------------------
 apt-get update -y
 apt-get upgrade -y
+apt-get install -y curl unzip software-properties-common ca-certificates ufw git build-essential
 
 # ---------------------------
-# Install core utilities
+# Node.js LTS (system-wide)
 # ---------------------------
-apt-get install -y curl unzip software-properties-common ca-certificates
+install_node() {
+  local NODE_VERSION=${1:-lts}  # default to LTS
+  curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
+  apt-get install -y nodejs
+  npm config set fund false
+  npm config set audit false
+  echo "✅ Node.js installed: $(node -v)"
+}
+
+install_node lts
 
 # ---------------------------
-# Install Node.js LTS
-# ---------------------------
-curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-apt-get install -y nodejs
-
-echo "Node version: $(node -v)"
-echo "NPM version: $(npm -v)"
-
-# ---------------------------
-# NPM global config (BEST PRACTICE)
-# ---------------------------
-npm config set fund false
-npm config set audit false
-
-# ---------------------------
-# Install PM2 globally
+# PM2 process manager
 # ---------------------------
 npm install -g pm2
 pm2 startup systemd -u ubuntu --hp /home/ubuntu
+echo "✅ PM2 installed"
 
 # ---------------------------
-# Create application and maintenance directories
+# App directories
 # ---------------------------
-APP_DIR="/var/www/app-name"
+APP_DIR="/var/www/app"
 MAINT_DIR="/var/www/html"
 
-mkdir -p "$APP_DIR"
-mkdir -p "$MAINT_DIR"
-
+mkdir -p "$APP_DIR" "$MAINT_DIR"
 chown -R ubuntu:ubuntu "$APP_DIR"
 chmod -R 755 "$APP_DIR"
 
-# Create default maintenance page
-echo "<h1>Site under maintenance</h1>" > "$MAINT_DIR/index.html"
+# ---------------------------
+# Maintenance page
+# ---------------------------
+cat <<EOF > "$MAINT_DIR/maintenance.html"
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Maintenance</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 10%; }
+  </style>
+</head>
+<body>
+  <h1 style="color: #333; font-size: 24px; font-weight: bold;">Maintenance in progress, please check back later.</h1>
+  <p style="color: #666; font-size: 16px;">We'll be right back.</p>
+</body>
+</html>
+EOF
 
 # ---------------------------
-# Install and configure Nginx
+# Nginx setup
 # ---------------------------
 apt-get install -y nginx
 systemctl enable nginx
-systemctl start nginx
 
-NGINX_CONF="/etc/nginx/sites-available/app-name"
-cat <<EOF > "$NGINX_CONF"
+cat <<EOF > /etc/nginx/sites-available/app
 server {
     listen 80;
     server_name _;
-
-    root $MAINT_DIR;
-    index index.html;
 
     location / {
         proxy_pass http://localhost:8000;
@@ -79,22 +84,52 @@ server {
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
 
-        # Fallback to maintenance page if Node.js is down
         proxy_intercept_errors on;
-        error_page 502 = /index.html;
+        error_page 502 503 504 = /maintenance.html;
+    }
+
+    location = /maintenance.html {
+        root /var/www/html;
+        internal;
     }
 }
 EOF
 
-ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/app-name
+ln -sf /etc/nginx/sites-available/app /etc/nginx/sites-enabled/app
 rm -f /etc/nginx/sites-enabled/default
-
 nginx -t
 systemctl reload nginx
+echo "✅ Nginx configured"
 
 # ---------------------------
-# Final log
+# Firewall setup
 # ---------------------------
-echo "EC2 bootstrap completed successfully at $(date)"
-echo "Deployment directory: $APP_DIR"
-echo "Maintenance page ready at $MAINT_DIR/index.html"
+ufw allow OpenSSH
+ufw allow 'Nginx Full'
+ufw --force enable
+echo "✅ Firewall enabled"
+
+# ---------------------------
+# Helpful function: Upgrade Node in future
+# ---------------------------
+cat <<'EOF' > /usr/local/bin/upgrade-node
+#!/bin/bash
+# Usage: sudo upgrade-node <version|lts>
+VERSION="${1:-lts}"
+curl -fsSL https://deb.nodesource.com/setup_${VERSION}.x | bash -
+apt-get install -y nodejs
+npm config set fund false
+npm config set audit false
+echo "✅ Node upgraded to $(node -v)"
+EOF
+
+chmod +x /usr/local/bin/upgrade-node
+echo "✅ upgrade-node script installed (sudo upgrade-node lts)"
+
+# ---------------------------
+# Final PM2 startup & log
+# ---------------------------
+sudo -u ubuntu pm2 save
+echo "✅ Bootstrap complete at $(date)"
+echo "App directory: $APP_DIR"
+echo "Maintenance page: $MAINT_DIR/maintenance.html"
