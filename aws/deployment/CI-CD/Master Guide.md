@@ -1,6 +1,3 @@
-Here’s the combined deployment guide in clean **Markdown** format:
-
-```markdown
 # 🎯 Master Deployment Guide: Node.js Backend on EC2 with GitHub Actions CI/CD
 
 **End state (Non-Negotiable):**
@@ -38,7 +35,7 @@ Here’s the combined deployment guide in clean **Markdown** format:
 - Runs app via PM2 cluster
 - Clean directory with no git repo
 
-```
+
 ---
 > **If you use the automated EC2 bootstrap script [`ec2-bootstrap-without-domain.sh`](../userdata/ec2-bootstrap-without-domain.sh), you can **skip Steps 1–5 below**:
 
