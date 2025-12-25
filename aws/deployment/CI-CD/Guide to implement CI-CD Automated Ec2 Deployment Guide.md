@@ -184,9 +184,9 @@ GitHub → Repo → Settings → Secrets → Actions
 
 Required secrets:
 
-* `EC2_HOST`
-* `EC2_USERNAME` (ubuntu)
-* `EC2_SSH_KEY`
+* `EC2_HOST` *EC2 Public IP*
+* `EC2_USERNAME` *e.g. **ubuntu** for Ubuntu, and **ec2-user** for Amazon Linux Image* 
+* `EC2_SSH_KEY`  *key pair that used to connect with EC2*
 * `DATABASE_URL`
 * `JWT_SECRET`
 * `REFRESH_TOKEN_SECRET`
