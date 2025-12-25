@@ -44,7 +44,7 @@ pm2 startup systemd -u ubuntu --hp /home/ubuntu
 # ---------------------------
 # Create deployment directory
 # ---------------------------
-APP_DIR="/var/www/paymate-api-two"
+APP_DIR="/var/www/app-name-two"
 mkdir -p "$APP_DIR"
 chown -R ubuntu:ubuntu "$APP_DIR"
 chmod -R 755 "$APP_DIR"
@@ -63,7 +63,7 @@ apt-get install -y nginx
 systemctl enable nginx
 systemctl start nginx
 
-NGINX_CONF="/etc/nginx/sites-available/paymate-api-two"
+NGINX_CONF="/etc/nginx/sites-available/app-name-two"
 cat <<EOF > "$NGINX_CONF"
 server {
     listen 80;
@@ -87,7 +87,7 @@ server {
 }
 EOF
 
-ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/paymate-api-two
+ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/app-name-two
 rm -f /etc/nginx/sites-enabled/default
 
 nginx -t

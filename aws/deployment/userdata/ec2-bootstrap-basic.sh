@@ -37,7 +37,7 @@ pm2 startup systemd -u ubuntu --hp /home/ubuntu
 # ---------------------------
 # Create application directories
 # ---------------------------
-APP_DIR="/var/www/paymate-api"
+APP_DIR="/var/www/app-name"
 MAINT_DIR="/var/www/html"
 
 mkdir -p "$APP_DIR"
@@ -59,7 +59,7 @@ systemctl start nginx
 # ---------------------------
 # Configure Nginx with fallback
 # ---------------------------
-cat <<EOF > /etc/nginx/sites-available/paymate-api
+cat <<EOF > /etc/nginx/sites-available/app-name
 server {
     listen 80;
     server_name _;
@@ -84,7 +84,7 @@ server {
 }
 EOF
 
-ln -sf /etc/nginx/sites-available/paymate-api /etc/nginx/sites-enabled/paymate-api
+ln -sf /etc/nginx/sites-available/app-name /etc/nginx/sites-enabled/app-name
 rm -f /etc/nginx/sites-enabled/default
 
 nginx -t
