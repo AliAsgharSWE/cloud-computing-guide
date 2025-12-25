@@ -39,25 +39,22 @@ Here’s the combined deployment guide in clean **Markdown** format:
 
 ```
 ---
-**Note: If you are using the EC2 bootstrap script ec2-bootstrap-without-domain.sh
-, you can ignore Markdown Steps 1–5:**
+> **If you use the automated EC2 bootstrap script [`ec2-bootstrap-without-domain.sh`](../userdata/ec2-bootstrap-without-domain.sh), you can **skip Steps 1–5 below**:
 
-STEP 1: Initial EC2 Server Setup (update & upgrade)
+**What the script already does for you:**
+- Performs all initial system updates & security upgrades
+- Installs the correct version of Node.js
+- Installs, configures, and enables Nginx (including a maintenance page)
+- Creates and permission-secures deployment directories
+- Installs and sets up PM2 process manager
 
-STEP 2: Install Node.js
+**What to do next:**  
+**Proceed directly to STEP 6** in this guide (starting with CI/CD, GitHub Actions deployment, artifact handling, PM2 reload, etc).
 
-STEP 3: Install & Configure Nginx
-
-STEP 4: Create Deployment Directory
-
-STEP 5: Install PM2
-
-The script already handles system updates, Node.js installation, Nginx setup with a maintenance page, deployment directories, and PM2 installation.
-
-Continue following STEP 6 onwards in the Markdown guide for app CI/CD, GitHub Actions, deployment flow, and verification.
-
-**Download or view the EC2 bootstrap script:** [`ec2-bootstrap-without-domain.sh`](../userdata/ec2-bootstrap-without-domain.sh)
 ---
+
+[View or download the recommended EC2 bootstrap script  
+`ec2-bootstrap-without-domain.sh`](../userdata/ec2-bootstrap-without-domain.sh)
 
 ## STEP 1: Initial EC2 Server Setup (One-Time Only)
 
