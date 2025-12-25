@@ -194,6 +194,67 @@ DATABASE_URL=postgresql://appuser:StrongPassword123!@localhost:5432/appdb
 ```
 ---
 
+## Verify EC2 Bootstrap Installation
+
+After your EC2 instance launches, verify that all installations completed successfully using the comprehensive verification guide:
+
+📋 **[Complete Verification Guide](./Verification%20Guide.md)** - Step-by-step commands to verify:
+
+- ✅ User-data script execution
+- ✅ Node.js & npm installation
+- ✅ PM2 process manager & systemd integration
+- ✅ PostgreSQL database & user setup
+- ✅ App & maintenance directories
+- ✅ Nginx configuration & service
+- ✅ Firewall (UFW) rules
+- ✅ Helper scripts
+- ✅ Common issues & troubleshooting
+
+**Quick Check:**
+```bash
+sudo cat /var/log/user-data.log
+```
+
+Look for "✅ Bootstrap complete" at the end of the log file.
+
+---
+
+## Fix App Directory to Match Deployment Path
+
+### Problem:
+
+EC2 app directory (created by user-data script) does not match the path expected by deployment scripts.
+
+This can cause PM2 errors, failed deployments, or missing `.env` and logs.
+
+**Example:** User-data script creates `/var/www/app`, but your deployment expects `/var/www/app-name`.
+
+### ✅ Steps to fix
+
+#### 1. Rename the directory
+```bash
+sudo mv /var/www/app /var/www/app-name
+```
+
+#### 2. Fix ownership
+```bash
+sudo chown -R ubuntu:ubuntu /var/www/app-name
+```
+
+#### 3. Verify
+```bash
+ls -ld /var/www/app-name
+```
+
+**Expected output:**
+```
+drwxr-xr-x 2 ubuntu ubuntu ...
+```
+
+⚠️ **Important:** Replace `app-name` with your actual app name that matches your deployment configuration (e.g., as specified in `ecosystem.config.cjs` and GitHub Actions workflow).
+
+---
+
 ## STEP 7: Prepare Your App for CI/CD
 
 Required files in repo:
@@ -232,7 +293,8 @@ In your GitHub repository → Settings → Secrets → Actions:
 - `EC2_HOST` – EC2 public IP
 - `EC2_USERNAME` – EC2 user (e.g., `ubuntu`) and for Amazon Machine Image (e.g., `ec2-user`)
 - `EC2_SSH_KEY` – Private key content
-- `DATABASE_URL`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `PORT`, `SERVER_URL`, `FRONTEND_URL`, SMTP secrets
+- `DATABASE_URL`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `PORT`, `SERVER_URL`, `FRONTEND_URL`, SMTP secrets and others...
+- **Ensure that the `DATABASE_URL` references your EC2-hosted or managed database instance, not your local development database.**
 
 ⚠️ Never commit `.env` to git.
 
@@ -263,7 +325,8 @@ Create `.github/workflows/deploy.yml`:
 - Verify via curl
 - Rollback on failure if needed
 
-*(The full YAML is robust and production-ready.)*
+*(The full YAML is robust and production-ready.  
+View the actual workflow YAML in [`aws/deployment/CI-CD/github-actions-workflow.yml`](./github-actions-workflow.yml) for a ready-to-use template.)*
 
 ---
 
