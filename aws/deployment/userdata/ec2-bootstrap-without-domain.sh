@@ -35,6 +35,22 @@ pm2 startup systemd -u ubuntu --hp /home/ubuntu
 echo "✅ PM2 installed"
 
 # ---------------------------
+# PostgreSQL installation & setup
+# ---------------------------
+apt-get install -y postgresql postgresql-contrib
+systemctl enable postgresql
+systemctl start postgresql
+echo "✅ PostgreSQL installed & running"
+
+# Create DB and user
+sudo -u postgres psql <<EOF
+CREATE DATABASE appdb;
+CREATE USER appuser WITH ENCRYPTED PASSWORD 'StrongPassword123!';
+GRANT ALL PRIVILEGES ON DATABASE appdb TO appuser;
+EOF
+echo "✅ Database 'appdb' and user 'appuser' created"
+
+# ---------------------------
 # App directories
 # ---------------------------
 APP_DIR="/var/www/app"
@@ -133,3 +149,4 @@ sudo -u ubuntu pm2 save
 echo "✅ Bootstrap complete at $(date)"
 echo "App directory: $APP_DIR"
 echo "Maintenance page: $MAINT_DIR/maintenance.html"
+echo "Postgres DB: appdb | User: appuser | Password: StrongPassword123!"

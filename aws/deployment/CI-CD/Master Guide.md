@@ -13,6 +13,7 @@ Here’s the combined deployment guide in clean **Markdown** format:
 - ✅ Zero-downtime reloads
 - ✅ Backup & rollback enabled
 - ✅ Nginx with timeout and reverse proxy configuration
+- ✅ PostgreSQL database installed and configured
 
 ---
 
@@ -47,9 +48,10 @@ Here’s the combined deployment guide in clean **Markdown** format:
 - Installs, configures, and enables Nginx (including a maintenance page)
 - Creates and permission-secures deployment directories
 - Installs and sets up PM2 process manager
+- Installs and configures PostgreSQL with database and user
 
 **What to do next:**  
-**Proceed directly to STEP 6** in this guide (starting with CI/CD, GitHub Actions deployment, artifact handling, PM2 reload, etc).
+**You can skip to [STEP 7](#step-7-cicd-deploy-with-github-actions) of this guide** (CI/CD with GitHub Actions deployment, artifact handling, PM2 reload, etc).
 
 ---
 
@@ -168,7 +170,34 @@ pm2 save
 
 ---
 
-## STEP 6: Prepare Your App for CI/CD
+## STEP 6: Install & Configure PostgreSQL (One-Time Only)
+
+Install PostgreSQL:
+
+```bash
+sudo apt install -y postgresql postgresql-contrib
+sudo systemctl enable postgresql
+sudo systemctl start postgresql
+```
+
+Create database and user:
+
+```bash
+sudo -u postgres psql <<EOF
+CREATE DATABASE appdb;
+CREATE USER appuser WITH ENCRYPTED PASSWORD 'StrongPassword123!';
+GRANT ALL PRIVILEGES ON DATABASE appdb TO appuser;
+EOF
+```
+
+⚠️ **Security Note:** Change `'StrongPassword123!'` to a strong password and store it securely in GitHub Secrets as `DATABASE_URL`. E.g.
+
+```
+DATABASE_URL=postgresql://appuser:StrongPassword123!@localhost:5432/appdb
+```
+---
+
+## STEP 7: Prepare Your App for CI/CD
 
 Required files in repo:
 
@@ -178,7 +207,8 @@ Required files in repo:
 - `/dist` output
 - `/health` endpoint
 
-Example **ecosystem.config.cjs**:
+Example **ecosystem.config.cjs** ([view the starter template here](../Eco-system/ecosystem.config.cjs)).  
+You can copy this starter and modify it as needed for your app or another dummy ecosystem.config.cjs is in the following:
 
 ```js
 module.exports = {
@@ -198,12 +228,12 @@ module.exports = {
 
 ---
 
-## STEP 7: Configure GitHub Secrets
+## STEP 8: Configure GitHub Secrets
 
 In your GitHub repository → Settings → Secrets → Actions:
 
 - `EC2_HOST` – EC2 public IP
-- `EC2_USERNAME` – EC2 user (e.g., `ubuntu`)
+- `EC2_USERNAME` – EC2 user (e.g., `ubuntu`) and for Amazon Machine Image (e.g., `ec2-user`)
 - `EC2_SSH_KEY` – Private key content
 - `DATABASE_URL`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `PORT`, `SERVER_URL`, `FRONTEND_URL`, SMTP secrets
 
@@ -211,7 +241,7 @@ In your GitHub repository → Settings → Secrets → Actions:
 
 ---
 
-## STEP 8: GitHub Actions Workflow
+## STEP 9: GitHub Actions Workflow
 
 Create `.github/workflows/deploy.yml`:
 
@@ -240,7 +270,7 @@ Create `.github/workflows/deploy.yml`:
 
 ---
 
-## STEP 9: Deployment Flow (Every Push)
+## STEP 10: Deployment Flow (Every Push)
 
 1. `git push origin main`
 2. GitHub Actions builds & packages app
@@ -253,7 +283,7 @@ Create `.github/workflows/deploy.yml`:
 
 ---
 
-## STEP 10: Verification & Debugging
+## STEP 11: Verification & Debugging
 
 On EC2:
 
