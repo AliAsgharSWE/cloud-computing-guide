@@ -35,6 +35,12 @@ pm2 startup systemd -u ubuntu --hp /home/ubuntu
 echo "✅ PM2 installed"
 
 # ---------------------------
+# Prisma CLI (required for migrations)
+# ---------------------------
+npm install -g prisma @prisma/client
+echo "✅ Prisma CLI installed"
+
+# ---------------------------
 # PostgreSQL installation & setup
 # ---------------------------
 apt-get install -y postgresql postgresql-contrib
@@ -51,14 +57,16 @@ EOF
 echo "✅ Database 'appdb' and user 'appuser' created"
 
 # ---------------------------
-# App directories
+# App directories (matching CI/CD deployment path)
 # ---------------------------
-APP_DIR="/var/www/app"
+APP_DIR="/var/www/checkpoint"
 MAINT_DIR="/var/www/html"
 
-mkdir -p "$APP_DIR" "$MAINT_DIR"
+mkdir -p "$APP_DIR" "$APP_DIR/backups" "$APP_DIR/logs" "$APP_DIR/uploads" "$MAINT_DIR"
 chown -R ubuntu:ubuntu "$APP_DIR"
 chmod -R 755 "$APP_DIR"
+chmod 700 "$APP_DIR"  # Secure the main directory
+echo "✅ App directories created: $APP_DIR"
 
 # ---------------------------
 # Maintenance page
@@ -118,6 +126,21 @@ systemctl reload nginx
 echo "✅ Nginx configured"
 
 # ---------------------------
+# SSH Configuration (keepalive for CI/CD)
+# ---------------------------
+SSH_CONFIG="/etc/ssh/sshd_config"
+if ! grep -q "ClientAliveInterval" "$SSH_CONFIG"; then
+  echo "" >> "$SSH_CONFIG"
+  echo "# SSH Keepalive for CI/CD deployments" >> "$SSH_CONFIG"
+  echo "ClientAliveInterval 30" >> "$SSH_CONFIG"
+  echo "ClientAliveCountMax 10" >> "$SSH_CONFIG"
+  systemctl restart sshd
+  echo "✅ SSH keepalive configured"
+else
+  echo "✅ SSH keepalive already configured"
+fi
+
+# ---------------------------
 # Firewall setup
 # ---------------------------
 ufw allow OpenSSH
@@ -143,10 +166,51 @@ chmod +x /usr/local/bin/upgrade-node
 echo "✅ upgrade-node script installed (sudo upgrade-node lts)"
 
 # ---------------------------
+# Additional tools for CI/CD
+# ---------------------------
+# Install curl (if not already installed) for health checks
+apt-get install -y curl
+
+# Ensure ubuntu user has proper permissions
+usermod -aG sudo ubuntu
+echo "✅ User permissions configured"
+
+# ---------------------------
+# Create initial .env placeholder (will be replaced by CI/CD)
+# ---------------------------
+if [ ! -f "$APP_DIR/.env" ]; then
+  touch "$APP_DIR/.env"
+  chown ubuntu:ubuntu "$APP_DIR/.env"
+  chmod 600 "$APP_DIR/.env"
+  echo "✅ .env placeholder created"
+fi
+
+# ---------------------------
 # Final PM2 startup & log
 # ---------------------------
-sudo -u ubuntu pm2 save
+sudo -u ubuntu pm2 save || true  # May fail if no processes, that's OK
 echo "✅ Bootstrap complete at $(date)"
+echo ""
+echo "📋 EC2 Instance Ready for CI/CD Deployment"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "App directory: $APP_DIR"
+echo "Backups directory: $APP_DIR/backups"
+echo "Logs directory: $APP_DIR/logs"
+echo "Uploads directory: $APP_DIR/uploads"
 echo "Maintenance page: $MAINT_DIR/maintenance.html"
-echo "Postgres DB: appdb | User: appuser | Password: StrongPassword123!"
+echo ""
+echo "Installed Software:"
+echo "  - Node.js: $(node -v)"
+echo "  - npm: $(npm -v)"
+echo "  - PM2: $(pm2 -v)"
+echo "  - Prisma: $(prisma --version 2>/dev/null || echo 'installed')"
+echo ""
+echo "Database:"
+echo "  - Database: appdb"
+echo "  - User: appuser"
+echo "  - Password: StrongPassword123!"
+echo ""
+echo "SSH Configuration:"
+echo "  - Keepalive: Enabled (ClientAliveInterval 30)"
+echo "  - Ready for CI/CD deployments"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
